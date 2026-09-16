@@ -1,0 +1,1 @@
+# CashCaddy — debug/release without shrinking by default.
