@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -87,6 +88,7 @@ fun PeriodFilterChip(
     val scheme = MaterialTheme.colorScheme
     Surface(
         modifier = modifier
+            .height(48.dp)
             .clip(CircleShape)
             .clickable(onClick = onClick),
         shape = CircleShape,
@@ -208,7 +210,10 @@ fun SelectorPill(
         tonalElevation = 0.dp,
     ) {
         Row(
-            Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+            Modifier
+                .fillMaxWidth()
+                .fillMaxHeight()
+                .padding(horizontal = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Start,
         ) { content() }

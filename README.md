@@ -21,9 +21,9 @@ The UI follows the CashCaddy Material 3 design (dark and light): Home logs, Insi
 
 Custom 5-item tab bar: Home, Insights, elevated centre **+**, Budgets, Settings.
 
-## Demo data
+## First launch
 
-On first launch the database is seeded with the design’s categories (Food & Drink, Transport, Shopping, Groceries, Bills, Health, plus Travel / Fuel / Rent suggestions), sample transactions (including the Home log rows), a salary income, last-month spend for the comparison chip, and six monthly budgets. Amounts use **INR (₹)** by default.
+The database starts empty of transactions and budgets. Starter categories are created so Add works immediately: Food & Drink, Transport, Shopping, Groceries, Bills, Health, plus Travel / Fuel / Rent suggestions, and Salary / Freelance for income. Currency defaults to **INR (₹)**.
 
 ## Build
 

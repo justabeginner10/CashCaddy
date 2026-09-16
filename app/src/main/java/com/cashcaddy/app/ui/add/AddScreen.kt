@@ -131,10 +131,16 @@ fun AddScreen(
         )
 
         Spacer(Modifier.height(14.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
             SelectorPill(
                 onClick = { onShowDatePicker(true) },
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .height(48.dp),
             ) {
                 Icon(
                     Icons.Outlined.CalendarMonth,
@@ -143,14 +149,16 @@ fun AddScreen(
                     modifier = Modifier.size(18.dp),
                 )
                 Spacer(Modifier.width(8.dp))
-                Text(formatShortDate(date), style = MaterialTheme.typography.bodyMedium)
+                Text(formatShortDate(date), style = MaterialTheme.typography.bodyMedium, maxLines = 1)
             }
             SelectorPill(
                 onClick = onPickCategory,
-                modifier = Modifier.weight(1.15f),
+                modifier = Modifier
+                    .weight(1f)
+                    .height(48.dp),
             ) {
                 if (selectedCategory != null) {
-                    EmojiTile(selectedCategory.emoji, selectedCategory.colorHex, size = 28.dp, corner = 8.dp)
+                    EmojiTile(selectedCategory.emoji, selectedCategory.colorHex, size = 22.dp, corner = 7.dp)
                     Spacer(Modifier.width(8.dp))
                     Text(
                         selectedCategory.name,
@@ -159,9 +167,14 @@ fun AddScreen(
                         modifier = Modifier.weight(1f),
                     )
                 } else {
-                    Text("Category", modifier = Modifier.weight(1f))
+                    Text("Category", modifier = Modifier.weight(1f), maxLines = 1)
                 }
-                Icon(Icons.Outlined.ArrowDropDown, contentDescription = null, modifier = Modifier.size(20.dp), tint = scheme.onSurfaceVariant)
+                Icon(
+                    Icons.Outlined.ArrowDropDown,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                    tint = scheme.onSurfaceVariant,
+                )
             }
         }
 
@@ -193,7 +206,7 @@ fun AddScreen(
             Spacer(Modifier.width(8.dp))
             Text(if (type == MoneyType.Expense) "Save expense" else "Save income", fontWeight = FontWeight.Medium)
         }
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(28.dp))
     }
 
     if (showDatePicker) {

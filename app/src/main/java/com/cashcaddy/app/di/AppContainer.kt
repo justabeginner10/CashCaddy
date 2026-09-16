@@ -20,7 +20,7 @@ class AppContainer(context: Context) {
         context.applicationContext,
         CashCaddyDatabase::class.java,
         "cashcaddy.db",
-    ).build()
+    ).fallbackToDestructiveMigration().build()
 
     val categoryRepository = CategoryRepository(database.categoryDao())
     val transactionRepository = TransactionRepository(database.transactionDao())
