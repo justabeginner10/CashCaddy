@@ -56,23 +56,59 @@ fun formatMoney(
     }
 }
 
+const val MaxAmountIntegerDigits = 12
+const val MaxAmountMinor = 99_999_999_999_900L
+
+fun isValidAmountInput(text: String): Boolean {
+    if (text.isEmpty()) return true
+    if (text.count { it == '.' } > 1) return false
+    val integer = text.substringBefore('.')
+    val decimals = if ('.' in text) text.substringAfter('.') else ""
+    if (integer.any { !it.isDigit() } || decimals.any { !it.isDigit() }) return false
+    if (integer.length > MaxAmountIntegerDigits) return false
+    if (decimals.length > 2) return false
+    return true
+}
+
+fun parseMajorToMinor(text: String): Long? {
+    val value = text.toDoubleOrNull() ?: return null
+    if (value <= 0.0) return null
+    return Math.round(value * 100.0).coerceAtMost(MaxAmountMinor)
+}
+
+private fun compactToken(value: Double, suffix: String): String {
+    val rounded = if (kotlin.math.abs(value % 1.0) < 0.05) {
+        value.toLong().toString()
+    } else {
+        String.format(Locale.US, "%.1f", value)
+    }
+    return rounded + suffix
+}
+
+fun formatCompact(amountMinor: Long, currency: AppCurrency = AppCurrency.INR): String {
+    val major = abs(amountMinor) / 100.0
+    return when (currency) {
+        AppCurrency.INR -> when {
+            major >= 1_00_00_000 -> compactToken(major / 1_00_00_000, "Cr")
+            major >= 1_00_000 -> compactToken(major / 1_00_000, "L")
+            major >= 10_000 -> compactToken(major / 1_000, "k")
+            else -> NumberFormat.getIntegerInstance(Locale("en", "IN")).format(major.toLong())
+        }
+        else -> when {
+            major >= 1_000_000_000_000 -> compactToken(major / 1_000_000_000_000, "T")
+            major >= 1_000_000_000 -> compactToken(major / 1_000_000_000, "B")
+            major >= 1_000_000 -> compactToken(major / 1_000_000, "M")
+            major >= 10_000 -> compactToken(major / 1_000, "k")
+            else -> NumberFormat.getIntegerInstance(currency.locale).format(major.toLong())
+        }
+    }
+}
+
 private fun formatInr(major: Double, fractionDigits: Int): String {
     val nf = NumberFormat.getNumberInstance(Locale("en", "IN"))
     nf.maximumFractionDigits = fractionDigits
     nf.minimumFractionDigits = fractionDigits
     return "₹${nf.format(major)}"
-}
-
-fun formatCompact(amountMinor: Long): String {
-    val major = abs(amountMinor) / 100.0
-    return when {
-        major >= 10_000 -> "${(major / 1000).toInt()}k"
-        major >= 1_000 -> {
-            val k = major / 1000.0
-            if (k % 1.0 == 0.0) "${k.toInt()}k" else String.format(Locale.US, "%.1fk", k)
-        }
-        else -> NumberFormat.getIntegerInstance().format(major.toLong())
-    }
 }
 
 fun rupees(amount: Long): Long = amount * 100L
@@ -103,7 +139,7 @@ fun formatShortDate(date: LocalDate): String =
 
 fun daysLeftInMonth(today: LocalDate = LocalDate.now()): Int {
     val end = YearMonth.from(today).atEndOfMonth()
-    return (end.dayOfMonth - today.dayOfMonth).coerceAtLeast(0)
+    return (end.dayOfMonth - today.dayOfMonth + 1).coerceAtLeast(1)
 }
 
 fun monthPaceFraction(today: LocalDate = LocalDate.now()): Float {

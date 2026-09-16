@@ -39,6 +39,7 @@ import com.cashcaddy.app.ui.components.PeriodSheet
 import com.cashcaddy.app.ui.home.HomeScreen
 import com.cashcaddy.app.ui.insights.InsightsScreen
 import com.cashcaddy.app.ui.settings.SettingsScreen
+import com.cashcaddy.app.util.monthExpenseByCategory
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.YearMonth
@@ -107,6 +108,10 @@ fun CashCaddyRoot(viewModel: MainViewModel) {
                         onFilterOpenChange = { filterOpen = it },
                         onPeriodClick = { showPeriod = true },
                         onTransactionClick = { editingTx = it },
+                        onTransactionDelete = {
+                            viewModel.deleteTransaction(it.transaction)
+                            scope.launch { snackbar.showSnackbar("Transaction deleted") }
+                        },
                     )
                     AppTab.Insights -> InsightsScreen(
                         transactions = transactions,
@@ -146,6 +151,10 @@ fun CashCaddyRoot(viewModel: MainViewModel) {
                         onEdit = {
                             editingBudget = it
                             showBudgetEditor = true
+                        },
+                        onDelete = {
+                            viewModel.deleteBudget(it.budget)
+                            scope.launch { snackbar.showSnackbar("Budget deleted") }
                         },
                     )
                     AppTab.Settings -> SettingsScreen(
@@ -251,6 +260,7 @@ fun CashCaddyRoot(viewModel: MainViewModel) {
             existing = editingBudget,
             categories = categories,
             currency = settings.currency,
+            spentByCategory = monthExpenseByCategory(transactions),
             onSave = { name, catId, limit ->
                 val existing = editingBudget
                 if (existing == null) {

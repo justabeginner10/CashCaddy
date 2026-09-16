@@ -1,7 +1,6 @@
 package com.cashcaddy.app.ui.home
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -35,6 +35,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cashcaddy.app.data.local.entity.CategoryEntity
@@ -43,6 +44,8 @@ import com.cashcaddy.app.data.model.AppCurrency
 import com.cashcaddy.app.data.model.MoneyType
 import com.cashcaddy.app.data.model.Period
 import com.cashcaddy.app.ui.components.EmojiTile
+import com.cashcaddy.app.ui.components.ItemActionsBox
+import com.cashcaddy.app.ui.components.MoneyText
 import com.cashcaddy.app.ui.components.PeriodFilterChip
 import com.cashcaddy.app.ui.components.SoftTextField
 import com.cashcaddy.app.ui.theme.ComparisonGreen
@@ -70,6 +73,7 @@ fun HomeScreen(
     onFilterOpenChange: (Boolean) -> Unit,
     onPeriodClick: () -> Unit,
     onTransactionClick: (TransactionWithCategory) -> Unit,
+    onTransactionDelete: (TransactionWithCategory) -> Unit,
 ) {
     val today = remember { LocalDate.now() }
     val range = period.range(today)
@@ -187,9 +191,14 @@ fun HomeScreen(
                 PeriodFilterChip(period = period, onClick = onPeriodClick)
             }
             Spacer(Modifier.height(6.dp))
-            Text(
+            MoneyText(
                 formatMoney(spent, currency),
                 style = MaterialTheme.typography.displayLarge,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp),
+                textAlign = TextAlign.Center,
+                minTextSize = 22.sp,
             )
             if (previous != null && prevSpent > 0) {
                 val delta = ((prevSpent - spent).toDouble() / prevSpent.toDouble() * 100.0).roundToInt()
@@ -243,15 +252,23 @@ fun HomeScreen(
                                 color = scheme.onSurfaceVariant,
                                 modifier = Modifier.weight(1f),
                             )
-                            Text(
+                            MoneyText(
                                 formatMoney(dayTotal, currency),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = scheme.onSurfaceVariant,
+                                modifier = Modifier.widthIn(max = 140.dp),
+                                textAlign = TextAlign.End,
+                                minTextSize = 9.sp,
                             )
                         }
                     }
                     items(items, key = { it.transaction.id }) { item ->
-                        TransactionRow(item, currency, onClick = { onTransactionClick(item) })
+                        TransactionRow(
+                            item = item,
+                            currency = currency,
+                            onClick = { onTransactionClick(item) },
+                            onDelete = { onTransactionDelete(item) },
+                        )
                     }
                 }
             }
@@ -264,32 +281,44 @@ private fun TransactionRow(
     item: TransactionWithCategory,
     currency: AppCurrency,
     onClick: () -> Unit,
+    onDelete: () -> Unit,
 ) {
     val scheme = MaterialTheme.colorScheme
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        EmojiTile(item.category.emoji, item.category.colorHex)
-        Spacer(Modifier.width(14.dp))
-        Column(Modifier.weight(1f)) {
-            Text(item.transaction.title, style = MaterialTheme.typography.titleSmall)
-            Text(
-                "${item.category.name} · ${formatTime(item.transaction.occurredAt)}",
-                style = MaterialTheme.typography.bodySmall,
-                color = scheme.onSurfaceVariant,
+    ItemActionsBox(
+        onOpen = onClick,
+        onDelete = onDelete,
+        contentDescription = item.transaction.title,
+        deleteTitle = "Delete transaction?",
+        deleteBody = "“${item.transaction.title}” will be removed. This can’t be undone.",
+        modifier = Modifier.fillMaxWidth(),
+    ) { actionModifier ->
+        Row(
+            modifier = actionModifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            EmojiTile(item.category.emoji, item.category.colorHex)
+            Spacer(Modifier.width(14.dp))
+            Column(Modifier.weight(1f)) {
+                Text(item.transaction.title, style = MaterialTheme.typography.titleSmall)
+                Text(
+                    "${item.category.name} · ${formatTime(item.transaction.occurredAt)}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = scheme.onSurfaceVariant,
+                )
+            }
+            MoneyText(
+                formatMoney(
+                    item.transaction.amountMinor,
+                    currency,
+                    withSign = item.transaction.moneyType == MoneyType.Income,
+                ),
+                style = MaterialTheme.typography.titleSmall,
+                modifier = Modifier.widthIn(max = 132.dp),
+                textAlign = TextAlign.End,
+                minTextSize = 11.sp,
             )
         }
-        Text(
-            formatMoney(
-                item.transaction.amountMinor,
-                currency,
-                withSign = item.transaction.moneyType == MoneyType.Income,
-            ),
-            style = MaterialTheme.typography.titleSmall,
-        )
     }
 }

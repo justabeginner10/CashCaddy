@@ -5,16 +5,18 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -30,6 +32,11 @@ import com.cashcaddy.app.data.local.entity.BudgetWithCategory
 import com.cashcaddy.app.data.local.entity.CategoryEntity
 import com.cashcaddy.app.data.model.AppCurrency
 import com.cashcaddy.app.data.model.MoneyType
+import com.cashcaddy.app.util.budgetSnapshot
+import com.cashcaddy.app.util.isValidAmountInput
+import com.cashcaddy.app.util.parseHexColor
+import com.cashcaddy.app.util.parseMajorToMinor
+import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,9 +44,11 @@ fun BudgetEditorSheet(
     existing: BudgetWithCategory?,
     categories: List<CategoryEntity>,
     currency: AppCurrency,
+    spentByCategory: Map<Long, Long>,
     onSave: (name: String, categoryId: Long, limitMinor: Long) -> Unit,
     onDelete: (() -> Unit)?,
     onDismiss: () -> Unit,
+    today: LocalDate = LocalDate.now(),
 ) {
     val expenseCats = categories.filter { it.isActive && it.moneyType == MoneyType.Expense }
     var name by remember { mutableStateOf(existing?.budget?.name.orEmpty()) }
@@ -52,37 +61,76 @@ fun BudgetEditorSheet(
         )
     }
     var expanded by remember { mutableStateOf(false) }
+    var confirmDelete by remember { mutableStateOf(false) }
     val selected = expenseCats.firstOrNull { it.id == categoryId }
     val state = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val previewLimit = parseMajorToMinor(amountText) ?: existing?.budget?.limitMinor
+    val snapshot = previewLimit?.let { limit ->
+        budgetSnapshot(
+            limitMinor = limit,
+            spentMinor = spentByCategory[categoryId] ?: 0L,
+            today = today,
+        )
+    }
 
     CashCaddySheet(onDismiss, state) {
-        Column(Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
+        Column(
+            Modifier
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp, vertical = 8.dp),
+        ) {
             Text(
                 if (existing == null) "New budget" else "Edit budget",
-                style = androidx.compose.material3.MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.titleLarge,
             )
+            if (snapshot != null) {
+                Spacer(Modifier.height(16.dp))
+                BudgetStatus(
+                    snapshot = snapshot,
+                    currency = currency,
+                    accent = parseHexColor(selected?.colorHex ?: existing?.category?.colorHex ?: "#E8A066"),
+                    name = name.ifBlank { selected?.name },
+                    showDailyAllowance = true,
+                )
+            }
             Spacer(Modifier.height(16.dp))
-            OutlinedTextField(
+            SoftTextField(
                 value = name,
                 onValueChange = { name = it },
-                modifier = Modifier.fillMaxWidth(),
-                label = { Text("Name") },
-                singleLine = true,
-                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                placeholder = "Name",
+                label = "Name",
             )
             Spacer(Modifier.height(12.dp))
             ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
-                OutlinedTextField(
-                    value = selected?.let { "${it.emoji}  ${it.name}" }.orEmpty(),
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text("Category") },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
+                SelectorPill(
                     modifier = Modifier
                         .menuAnchor(MenuAnchorType.PrimaryNotEditable)
-                        .fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                )
+                        .fillMaxWidth()
+                        .height(56.dp),
+                ) {
+                    if (selected != null) {
+                        EmojiTile(selected.emoji, selected.colorHex, size = 28.dp, corner = 8.dp)
+                        Spacer(Modifier.width(12.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                "Category",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Text(selected.name, style = MaterialTheme.typography.bodyLarge, maxLines = 1)
+                        }
+                    } else {
+                        Text(
+                            "Category",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    ExposedDropdownMenuDefaults.TrailingIcon(expanded)
+                }
                 ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                     expenseCats.forEach { cat ->
                         DropdownMenuItem(
@@ -97,36 +145,49 @@ fun BudgetEditorSheet(
                 }
             }
             Spacer(Modifier.height(12.dp))
-            OutlinedTextField(
+            SoftTextField(
                 value = amountText,
-                onValueChange = { amountText = it.filter { ch -> ch.isDigit() || ch == '.' } },
-                modifier = Modifier.fillMaxWidth(),
-                label = { Text("Monthly limit") },
-                prefix = { Text(currency.symbol + " ") },
-                singleLine = true,
+                onValueChange = { incoming ->
+                    val cleaned = incoming.filter { ch -> ch.isDigit() || ch == '.' }
+                    if (isValidAmountInput(cleaned)) amountText = cleaned
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                placeholder = "0",
+                label = "Monthly limit",
+                prefix = currency.symbol + " ",
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                shape = RoundedCornerShape(16.dp),
             )
             Spacer(Modifier.height(20.dp))
             Button(
                 onClick = {
-                    val minor = ((amountText.toDoubleOrNull() ?: 0.0) * 100).toLong()
-                    if (name.isNotBlank() && categoryId != 0L && minor > 0) {
+                    val minor = parseMajorToMinor(amountText)
+                    if (name.isNotBlank() && categoryId != 0L && minor != null) {
                         onSave(name.trim(), categoryId, minor)
                     }
                 },
                 modifier = Modifier.fillMaxWidth().height(48.dp),
-                enabled = name.isNotBlank() && (amountText.toDoubleOrNull() ?: 0.0) > 0,
+                enabled = name.isNotBlank() && parseMajorToMinor(amountText) != null,
                 shape = CircleShape,
             ) {
                 Text("Save")
             }
             if (onDelete != null) {
-                TextButton(onClick = onDelete, modifier = Modifier.fillMaxWidth()) {
-                    Text("Delete budget", color = androidx.compose.material3.MaterialTheme.colorScheme.error)
+                TextButton(onClick = { confirmDelete = true }, modifier = Modifier.fillMaxWidth()) {
+                    Text("Delete budget", color = MaterialTheme.colorScheme.error)
                 }
             }
             Spacer(Modifier.height(12.dp))
         }
+    }
+
+    if (confirmDelete && onDelete != null) {
+        ConfirmDeleteDialog(
+            title = "Delete budget?",
+            body = "“${existing?.budget?.name.orEmpty()}” will be removed. This can’t be undone.",
+            onConfirm = onDelete,
+            onDismiss = { confirmDelete = false },
+        )
     }
 }

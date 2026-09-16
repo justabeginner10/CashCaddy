@@ -1,16 +1,12 @@
 package com.cashcaddy.app.ui.budgets
 
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -30,23 +26,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.cashcaddy.app.data.local.entity.BudgetWithCategory
 import com.cashcaddy.app.data.local.entity.TransactionWithCategory
 import com.cashcaddy.app.data.model.AppCurrency
-import com.cashcaddy.app.data.model.MoneyType
-import com.cashcaddy.app.util.daysLeftInMonth
-import com.cashcaddy.app.util.formatMoney
-import com.cashcaddy.app.util.monthPaceFraction
+import com.cashcaddy.app.ui.components.BudgetStatus
+import com.cashcaddy.app.ui.components.ItemActionsBox
+import com.cashcaddy.app.util.BudgetSnapshot
+import com.cashcaddy.app.util.budgetSnapshot
+import com.cashcaddy.app.util.monthExpenseByCategory
 import com.cashcaddy.app.util.parseHexColor
-import com.cashcaddy.app.util.toLocalDate
 import java.time.LocalDate
 import java.time.YearMonth
-import kotlin.math.roundToInt
 
 @Composable
 fun BudgetsScreen(
@@ -55,14 +46,11 @@ fun BudgetsScreen(
     currency: AppCurrency,
     onAdd: () -> Unit,
     onEdit: (BudgetWithCategory) -> Unit,
+    onDelete: (BudgetWithCategory) -> Unit,
 ) {
     val today = remember { LocalDate.now() }
-    val ym = YearMonth.from(today).toString()
-    val daysLeft = daysLeftInMonth(today)
-    val pace = monthPaceFraction(today)
-    val monthTx = transactions.filter {
-        it.transaction.moneyType == MoneyType.Expense &&
-            YearMonth.from(it.transaction.occurredAt.toLocalDate()).toString() == ym
+    val spentByCategory = remember(transactions, today) {
+        monthExpenseByCategory(transactions, YearMonth.from(today))
     }
 
     Column(
@@ -96,16 +84,17 @@ fun BudgetsScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 items(budgets, key = { it.budget.id }) { item ->
-                    val spent = monthTx
-                        .filter { it.transaction.categoryId == item.budget.categoryId }
-                        .sumOf { it.transaction.amountMinor }
+                    val snapshot = budgetSnapshot(
+                        limitMinor = item.budget.limitMinor,
+                        spentMinor = spentByCategory[item.budget.categoryId] ?: 0L,
+                        today = today,
+                    )
                     BudgetCard(
                         item = item,
-                        spentMinor = spent,
-                        daysLeft = daysLeft,
-                        pace = pace,
+                        snapshot = snapshot,
                         currency = currency,
-                        onClick = { onEdit(item) },
+                        onEdit = { onEdit(item) },
+                        onDelete = { onDelete(item) },
                     )
                 }
             }
@@ -116,90 +105,33 @@ fun BudgetsScreen(
 @Composable
 private fun BudgetCard(
     item: BudgetWithCategory,
-    spentMinor: Long,
-    daysLeft: Int,
-    pace: Float,
+    snapshot: BudgetSnapshot,
     currency: AppCurrency,
-    onClick: () -> Unit,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
 ) {
-    val limit = item.budget.limitMinor.coerceAtLeast(1L)
-    val fraction = (spentMinor.toFloat() / limit.toFloat()).coerceIn(0f, 1.2f)
-    val pct = ((spentMinor.toDouble() / limit) * 100).roundToInt().coerceAtMost(999)
-    val left = (limit - spentMinor).coerceAtLeast(0L)
-    val color = parseHexColor(item.category.colorHex)
-    val pctColor = when {
-        pct >= 90 -> parseHexColor("#F87171")
-        pct >= 70 -> parseHexColor("#E8A066")
-        else -> color
-    }
-
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
+    ItemActionsBox(
+        onOpen = onEdit,
+        onDelete = onDelete,
+        contentDescription = "Budget ${item.budget.name}",
+        deleteTitle = "Delete budget?",
+        deleteBody = "“${item.budget.name}” will be removed. This can’t be undone.",
         shape = RoundedCornerShape(22.dp),
-        color = MaterialTheme.colorScheme.surfaceContainer,
-        tonalElevation = 0.dp,
-    ) {
-        Column(Modifier.padding(16.dp)) {
-            Text(item.budget.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-            Spacer(Modifier.height(2.dp))
-            Text(
-                "$daysLeft days left",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+    ) { actionModifier ->
+        Surface(
+            modifier = actionModifier.fillMaxWidth(),
+            shape = RoundedCornerShape(22.dp),
+            color = MaterialTheme.colorScheme.surfaceContainer,
+            tonalElevation = 0.dp,
+        ) {
+            BudgetStatus(
+                snapshot = snapshot,
+                currency = currency,
+                accent = parseHexColor(item.category.colorHex),
+                name = item.budget.name,
+                card = true,
+                modifier = Modifier.padding(16.dp),
             )
-            Spacer(Modifier.height(18.dp))
-            Text(
-                "$pct% spent",
-                style = MaterialTheme.typography.labelMedium,
-                color = pctColor,
-                fontWeight = FontWeight.Medium,
-            )
-            Spacer(Modifier.height(2.dp))
-            Text(formatMoney(left, currency), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Normal)
-            Text(
-                "left this month",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(Modifier.height(14.dp))
-            val track = MaterialTheme.colorScheme.surfaceContainerHighest
-            val thumbOuter = androidx.compose.ui.graphics.Color.White
-            val thumbInner = androidx.compose.ui.graphics.Color(0xFF1A1C1E)
-            Canvas(Modifier.fillMaxWidth().height(16.dp)) {
-                val h = 8.dp.toPx()
-                val y = (size.height - h) / 2f
-                drawRoundRect(
-                    color = track,
-                    topLeft = Offset(0f, y),
-                    size = Size(size.width, h),
-                    cornerRadius = CornerRadius(h / 2, h / 2),
-                )
-                val spentW = size.width * fraction.coerceAtMost(1f)
-                if (spentW > 0f) {
-                    drawRoundRect(
-                        color = color,
-                        topLeft = Offset(0f, y),
-                        size = Size(spentW.coerceAtLeast(h), h),
-                        cornerRadius = CornerRadius(h / 2, h / 2),
-                    )
-                }
-                val markerX = size.width * pace.coerceIn(0.03f, 0.97f)
-                val thumbW = 5.dp.toPx()
-                drawRoundRect(
-                    color = thumbInner,
-                    topLeft = Offset(markerX - thumbW / 2f, 1.dp.toPx()),
-                    size = Size(thumbW, size.height - 2.dp.toPx()),
-                    cornerRadius = CornerRadius(thumbW / 2, thumbW / 2),
-                )
-                drawRoundRect(
-                    color = thumbOuter,
-                    topLeft = Offset(markerX - thumbW / 2f + 0.8.dp.toPx(), 2.dp.toPx()),
-                    size = Size(thumbW - 1.6.dp.toPx(), size.height - 4.dp.toPx()),
-                    cornerRadius = CornerRadius(2.dp.toPx(), 2.dp.toPx()),
-                )
-            }
         }
     }
 }

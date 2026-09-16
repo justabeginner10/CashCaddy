@@ -5,9 +5,10 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowDropDown
 import androidx.compose.material.icons.outlined.Edit
@@ -158,13 +160,20 @@ fun SoftTextField(
     placeholder: String,
     leadingIcon: ImageVector? = null,
     singleLine: Boolean = true,
+    label: String? = null,
+    prefix: String? = null,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
 ) {
     val scheme = MaterialTheme.colorScheme
+    val hasLabel = !label.isNullOrBlank()
     Row(
         modifier = modifier
             .clip(CircleShape)
             .background(scheme.surfaceContainerHighest.copy(alpha = if (scheme.isDark()) 0.7f else 1f))
-            .padding(horizontal = 16.dp, vertical = 14.dp),
+            .padding(
+                horizontal = 16.dp,
+                vertical = if (hasLabel) 8.dp else 14.dp,
+            ),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (leadingIcon != null) {
@@ -176,35 +185,64 @@ fun SoftTextField(
             )
             Spacer(Modifier.width(10.dp))
         }
-        Box(Modifier.weight(1f)) {
-            if (value.isEmpty()) {
-                Text(placeholder, color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
+        Column(Modifier.weight(1f)) {
+            if (hasLabel) {
+                Text(
+                    label,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = scheme.onSurfaceVariant,
+                    maxLines = 1,
+                )
             }
-            BasicTextField(
-                value = value,
-                onValueChange = onValueChange,
-                singleLine = singleLine,
-                textStyle = LocalTextStyle.current.merge(
-                    MaterialTheme.typography.bodyMedium.copy(color = scheme.onSurface),
-                ),
-                cursorBrush = SolidColor(scheme.primary),
-                modifier = Modifier.fillMaxWidth(),
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (!prefix.isNullOrEmpty()) {
+                    Text(
+                        prefix,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = scheme.onSurface,
+                    )
+                }
+                Box(Modifier.weight(1f)) {
+                    if (value.isEmpty()) {
+                        Text(
+                            placeholder,
+                            color = scheme.onSurfaceVariant,
+                            style = if (hasLabel) {
+                                MaterialTheme.typography.bodyLarge
+                            } else {
+                                MaterialTheme.typography.bodyMedium
+                            },
+                        )
+                    }
+                    BasicTextField(
+                        value = value,
+                        onValueChange = onValueChange,
+                        singleLine = singleLine,
+                        keyboardOptions = keyboardOptions,
+                        textStyle = LocalTextStyle.current.merge(
+                            (if (hasLabel) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodyMedium)
+                                .copy(color = scheme.onSurface),
+                        ),
+                        cursorBrush = SolidColor(scheme.primary),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
         }
     }
 }
 
 @Composable
 fun SelectorPill(
-    onClick: () -> Unit,
+    onClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
-    content: @Composable () -> Unit,
+    content: @Composable RowScope.() -> Unit,
 ) {
     val scheme = MaterialTheme.colorScheme
     Surface(
         modifier = modifier
             .clip(CircleShape)
-            .clickable(onClick = onClick),
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
         shape = CircleShape,
         color = scheme.surfaceContainerHighest.copy(alpha = if (scheme.isDark()) 0.7f else 1f),
         tonalElevation = 0.dp,
@@ -212,8 +250,7 @@ fun SelectorPill(
         Row(
             Modifier
                 .fillMaxWidth()
-                .fillMaxHeight()
-                .padding(horizontal = 14.dp),
+                .padding(horizontal = 14.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Start,
         ) { content() }

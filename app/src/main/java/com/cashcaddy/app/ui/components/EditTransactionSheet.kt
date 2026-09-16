@@ -1,6 +1,5 @@
 package com.cashcaddy.app.ui.components
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,8 +18,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -36,6 +33,8 @@ import androidx.compose.ui.unit.dp
 import com.cashcaddy.app.data.local.entity.CategoryEntity
 import com.cashcaddy.app.data.local.entity.TransactionWithCategory
 import com.cashcaddy.app.data.model.AppCurrency
+import com.cashcaddy.app.util.isValidAmountInput
+import com.cashcaddy.app.util.parseMajorToMinor
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -61,47 +60,50 @@ fun EditTransactionSheet(
     var title by remember { mutableStateOf(item.transaction.title) }
     var categoryId by remember { mutableStateOf(item.transaction.categoryId) }
     var showCategoryPicker by remember { mutableStateOf(false) }
+    var confirmDelete by remember { mutableStateOf(false) }
     val selected = categories.firstOrNull { it.id == categoryId } ?: item.category
     val scheme = MaterialTheme.colorScheme
-    val fieldColors = OutlinedTextFieldDefaults.colors(
-        focusedContainerColor = scheme.surfaceContainerHighest.copy(alpha = 0.4f),
-        unfocusedContainerColor = scheme.surfaceContainerHighest.copy(alpha = 0.4f),
-        focusedBorderColor = scheme.outlineVariant,
-        unfocusedBorderColor = scheme.outlineVariant.copy(alpha = 0.6f),
-    )
 
     CashCaddySheet(onDismiss, state) {
         Column(Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
             Text("Edit transaction", style = MaterialTheme.typography.titleLarge)
             Spacer(Modifier.height(20.dp))
-            OutlinedTextField(
+            SoftTextField(
                 value = amountText,
-                onValueChange = { amountText = it.filter { ch -> ch.isDigit() || ch == '.' } },
-                modifier = Modifier.fillMaxWidth(),
-                label = { Text("Amount") },
-                prefix = { Text(currency.symbol + " ") },
-                singleLine = true,
+                onValueChange = { incoming ->
+                    val cleaned = incoming.filter { ch -> ch.isDigit() || ch == '.' }
+                    if (isValidAmountInput(cleaned)) amountText = cleaned
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                placeholder = "0",
+                label = "Amount",
+                prefix = currency.symbol + " ",
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                shape = CircleShape,
-                colors = fieldColors,
             )
             Spacer(Modifier.height(12.dp))
-            OutlinedTextField(
+            SoftTextField(
                 value = title,
                 onValueChange = { title = it },
-                modifier = Modifier.fillMaxWidth(),
-                label = { Text("Title") },
-                singleLine = true,
-                shape = CircleShape,
-                colors = fieldColors,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                placeholder = "Title",
+                label = "Title",
             )
             Spacer(Modifier.height(16.dp))
-            SelectorPill(onClick = { showCategoryPicker = true }, modifier = Modifier.fillMaxWidth()) {
-                EmojiTile(selected.emoji, selected.colorHex, size = 40.dp)
+            SelectorPill(
+                onClick = { showCategoryPicker = true },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+            ) {
+                EmojiTile(selected.emoji, selected.colorHex, size = 28.dp, corner = 8.dp)
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
                     Text("Category", style = MaterialTheme.typography.labelSmall, color = scheme.onSurfaceVariant)
-                    Text(selected.name, style = MaterialTheme.typography.bodyLarge)
+                    Text(selected.name, style = MaterialTheme.typography.bodyLarge, maxLines = 1)
                 }
             }
             Spacer(Modifier.height(24.dp))
@@ -110,7 +112,7 @@ fun EditTransactionSheet(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                TextButton(onClick = onDelete) {
+                TextButton(onClick = { confirmDelete = true }) {
                     Icon(Icons.Outlined.Delete, contentDescription = null, tint = scheme.error, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(6.dp))
                     Text("Delete", color = scheme.error)
@@ -131,6 +133,15 @@ fun EditTransactionSheet(
         }
     }
 
+    if (confirmDelete) {
+        ConfirmDeleteDialog(
+            title = "Delete transaction?",
+            body = "“${item.transaction.title}” will be removed. This can’t be undone.",
+            onConfirm = onDelete,
+            onDismiss = { confirmDelete = false },
+        )
+    }
+
     if (showCategoryPicker) {
         CategoryPickerSheet(
             categories = categories,
@@ -141,9 +152,4 @@ fun EditTransactionSheet(
             onDismiss = { showCategoryPicker = false },
         )
     }
-}
-
-private fun parseMajorToMinor(text: String): Long? {
-    val value = text.toDoubleOrNull() ?: return null
-    return (value * 100.0).toLong()
 }

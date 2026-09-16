@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -26,6 +27,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import com.cashcaddy.app.ui.components.MoneyText
 import com.cashcaddy.app.ui.components.OutlinedPeriodChip
 import com.cashcaddy.app.ui.theme.DarkChartMuted
 import com.cashcaddy.app.ui.theme.LightChartMuted
@@ -117,9 +119,11 @@ fun InsightsScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Spacer(Modifier.height(6.dp))
-                Text(
+                MoneyText(
                     formatMoney(expenseTotal, currency, signedExpenseNegative = true),
                     style = MaterialTheme.typography.displayMedium,
+                    modifier = Modifier.fillMaxWidth(),
+                    minTextSize = 20.sp,
                 )
             }
             Column(horizontalAlignment = Alignment.End) {
@@ -129,10 +133,13 @@ fun InsightsScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Spacer(Modifier.height(6.dp))
-                Text(
+                MoneyText(
                     formatMoney(average, currency),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Normal,
+                    modifier = Modifier.widthIn(max = 140.dp),
+                    textAlign = TextAlign.End,
+                    minTextSize = 12.sp,
                 )
             }
         }
@@ -164,7 +171,7 @@ fun InsightsScreen(
             Column(Modifier.padding(16.dp)) {
                 Text("Spend over time", style = MaterialTheme.typography.titleSmall)
                 Spacer(Modifier.height(12.dp))
-                SpendChart(bars = bars, averageMinor = average, darkTheme = darkTheme)
+                SpendChart(bars = bars, averageMinor = average, darkTheme = darkTheme, currency = currency)
             }
         }
 
@@ -250,13 +257,24 @@ private fun SummaryCard(
             Spacer(Modifier.height(18.dp))
             Text(title, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(2.dp))
-            Text(amount, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+            MoneyText(
+                amount,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.fillMaxWidth(),
+                minTextSize = 13.sp,
+            )
         }
     }
 }
 
 @Composable
-private fun SpendChart(bars: List<Pair<String, Long>>, averageMinor: Long, darkTheme: Boolean) {
+private fun SpendChart(
+    bars: List<Pair<String, Long>>,
+    averageMinor: Long,
+    darkTheme: Boolean,
+    currency: AppCurrency,
+) {
     val maxVal = max(bars.maxOfOrNull { it.second } ?: 0L, averageMinor)
     val niceMax = niceCeiling(maxVal)
     val primary = MaterialTheme.colorScheme.primary
@@ -270,8 +288,8 @@ private fun SpendChart(bars: List<Pair<String, Long>>, averageMinor: Long, darkT
             Modifier.fillMaxHeight().padding(end = 8.dp),
             verticalArrangement = Arrangement.SpaceBetween,
         ) {
-            Text(formatCompact(niceMax), style = MaterialTheme.typography.labelSmall, color = onVar)
-            Text(formatCompact(niceMax / 2), style = MaterialTheme.typography.labelSmall, color = onVar)
+            Text(formatCompact(niceMax, currency), style = MaterialTheme.typography.labelSmall, color = onVar)
+            Text(formatCompact(niceMax / 2, currency), style = MaterialTheme.typography.labelSmall, color = onVar)
             Text("0", style = MaterialTheme.typography.labelSmall, color = onVar)
         }
         Column(Modifier.weight(1f).fillMaxHeight()) {
@@ -311,7 +329,7 @@ private fun SpendChart(bars: List<Pair<String, Long>>, averageMinor: Long, darkT
                             .padding(top = (148.dp * frac).coerceAtLeast(0.dp)),
                     ) {
                         Text(
-                            formatCompact(averageMinor),
+                            formatCompact(averageMinor, currency),
                             style = MaterialTheme.typography.labelSmall,
                             color = onVar,
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),

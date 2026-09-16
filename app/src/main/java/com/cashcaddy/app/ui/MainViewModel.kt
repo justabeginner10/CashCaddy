@@ -12,6 +12,7 @@ import com.cashcaddy.app.data.model.Appearance
 import com.cashcaddy.app.data.model.MoneyType
 import com.cashcaddy.app.data.model.UserSettings
 import com.cashcaddy.app.di.AppContainer
+import com.cashcaddy.app.util.MaxAmountMinor
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -40,7 +41,7 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
         viewModelScope.launch {
             container.transactionRepository.insert(
                 TransactionEntity(
-                    amountMinor = amountMinor,
+                    amountMinor = amountMinor.coerceIn(1L, MaxAmountMinor),
                     title = title.ifBlank { type.name },
                     categoryId = categoryId,
                     type = type.storage,
@@ -103,7 +104,7 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
                 BudgetEntity(
                     name = name,
                     categoryId = categoryId,
-                    limitMinor = limitMinor,
+                    limitMinor = limitMinor.coerceIn(1L, MaxAmountMinor),
                     yearMonth = yearMonth,
                 ),
             )

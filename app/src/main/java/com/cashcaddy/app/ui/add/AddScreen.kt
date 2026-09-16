@@ -46,10 +46,13 @@ import com.cashcaddy.app.data.local.entity.CategoryEntity
 import com.cashcaddy.app.data.model.AppCurrency
 import com.cashcaddy.app.data.model.MoneyType
 import com.cashcaddy.app.ui.components.EmojiTile
+import com.cashcaddy.app.ui.components.MoneyText
 import com.cashcaddy.app.ui.components.MoneyTypeToggle
 import com.cashcaddy.app.ui.components.SelectorPill
 import com.cashcaddy.app.ui.components.SoftTextField
 import com.cashcaddy.app.util.formatShortDate
+import com.cashcaddy.app.util.isValidAmountInput
+import com.cashcaddy.app.util.parseMajorToMinor
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
@@ -83,8 +86,8 @@ fun AddScreen(
             digit == "." -> if (amount.contains('.')) amount else "$amount."
             amount == "0" -> digit
             else -> {
-                val decimals = amount.substringAfter('.', missingDelimiterValue = "").length
-                if (amount.contains('.') && decimals >= 2) amount else amount + digit
+                val next = if (amount == "0") digit else amount + digit
+                if (isValidAmountInput(next)) next else amount
             }
         }
     }
@@ -103,24 +106,14 @@ fun AddScreen(
         MoneyTypeToggle(selected = type, onSelect = onTypeChange)
 
         Spacer(Modifier.weight(0.7f))
-        Row(
-            Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.Bottom,
-        ) {
-            Text(
-                currency.symbol,
-                style = MaterialTheme.typography.headlineSmall,
-                color = scheme.onSurfaceVariant,
-                modifier = Modifier.padding(end = 8.dp, bottom = 10.dp),
-            )
-            Text(
-                displayAmount(amount),
-                style = MaterialTheme.typography.displayLarge,
-                color = if (amountMuted) scheme.outline else scheme.onSurface,
-            )
-        }
-
+        MoneyText(
+            text = "${currency.symbol} ${displayAmount(amount)}",
+            style = MaterialTheme.typography.displayLarge,
+            color = if (amountMuted) scheme.outline else scheme.onSurface,
+            modifier = Modifier.fillMaxWidth(),
+            textAlign = TextAlign.Center,
+            minTextSize = 22.sp,
+        )
         Spacer(Modifier.weight(0.35f))
         SoftTextField(
             value = note,
@@ -273,8 +266,7 @@ private fun Keypad(onPress: (String) -> Unit, modifier: Modifier = Modifier) {
 }
 
 private fun parseAmount(text: String): Long {
-    val value = text.toDoubleOrNull() ?: return 0L
-    return Math.round(value * 100.0)
+    return parseMajorToMinor(text) ?: 0L
 }
 
 private fun displayAmount(text: String): String {
