@@ -7,16 +7,16 @@ import androidx.compose.ui.unit.sp
 
 val CashCaddyTypography = Typography(
     displayLarge = TextStyle(
-        fontWeight = FontWeight.Normal,
+        fontWeight = FontWeight.Light,
         fontSize = 52.sp,
         lineHeight = 58.sp,
-        letterSpacing = (-1).sp,
+        letterSpacing = (-1.5).sp,
     ),
     displayMedium = TextStyle(
-        fontWeight = FontWeight.Normal,
+        fontWeight = FontWeight.Light,
         fontSize = 40.sp,
         lineHeight = 46.sp,
-        letterSpacing = (-0.5).sp,
+        letterSpacing = (-0.8).sp,
     ),
     headlineLarge = TextStyle(
         fontWeight = FontWeight.SemiBold,
@@ -28,6 +28,12 @@ val CashCaddyTypography = Typography(
         fontSize = 28.sp,
         lineHeight = 34.sp,
     ),
+    headlineSmall = TextStyle(
+        fontWeight = FontWeight.Normal,
+        fontSize = 24.sp,
+        lineHeight = 30.sp,
+        letterSpacing = (-0.3).sp,
+    ),
     titleLarge = TextStyle(
         fontWeight = FontWeight.SemiBold,
         fontSize = 22.sp,
@@ -37,11 +43,11 @@ val CashCaddyTypography = Typography(
         fontWeight = FontWeight.Medium,
         fontSize = 16.sp,
         lineHeight = 22.sp,
-        letterSpacing = 0.15.sp,
+        letterSpacing = 0.1.sp,
     ),
     titleSmall = TextStyle(
         fontWeight = FontWeight.Medium,
-        fontSize = 14.sp,
+        fontSize = 15.sp,
         lineHeight = 20.sp,
         letterSpacing = 0.1.sp,
     ),
@@ -57,8 +63,8 @@ val CashCaddyTypography = Typography(
     ),
     bodySmall = TextStyle(
         fontWeight = FontWeight.Normal,
-        fontSize = 12.sp,
-        lineHeight = 16.sp,
+        fontSize = 13.sp,
+        lineHeight = 18.sp,
     ),
     labelLarge = TextStyle(
         fontWeight = FontWeight.Medium,
@@ -70,12 +76,12 @@ val CashCaddyTypography = Typography(
         fontWeight = FontWeight.Medium,
         fontSize = 12.sp,
         lineHeight = 16.sp,
-        letterSpacing = 0.5.sp,
+        letterSpacing = 0.4.sp,
     ),
     labelSmall = TextStyle(
         fontWeight = FontWeight.Medium,
         fontSize = 11.sp,
         lineHeight = 16.sp,
-        letterSpacing = 0.5.sp,
+        letterSpacing = 0.8.sp,
     ),
 )

@@ -14,10 +14,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ArrowDropDown
 import androidx.compose.material.icons.automirrored.outlined.Backspace
+import androidx.compose.material.icons.outlined.ArrowDropDown
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.EditNote
@@ -26,13 +25,9 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
@@ -51,6 +46,9 @@ import com.cashcaddy.app.data.local.entity.CategoryEntity
 import com.cashcaddy.app.data.model.AppCurrency
 import com.cashcaddy.app.data.model.MoneyType
 import com.cashcaddy.app.ui.components.EmojiTile
+import com.cashcaddy.app.ui.components.MoneyTypeToggle
+import com.cashcaddy.app.ui.components.SelectorPill
+import com.cashcaddy.app.ui.components.SoftTextField
 import com.cashcaddy.app.util.formatShortDate
 import java.time.Instant
 import java.time.LocalDate
@@ -75,6 +73,7 @@ fun AddScreen(
 ) {
     var amount by rememberSaveable { mutableStateOf("0") }
     var note by rememberSaveable { mutableStateOf("") }
+    val scheme = MaterialTheme.colorScheme
 
     fun press(digit: String) {
         amount = when {
@@ -92,6 +91,7 @@ fun AddScreen(
 
     val amountMinor = parseAmount(amount)
     val canSave = amountMinor > 0 && selectedCategory != null
+    val amountMuted = amount == "0"
 
     Column(
         Modifier
@@ -100,20 +100,9 @@ fun AddScreen(
             .padding(horizontal = 20.dp),
     ) {
         Spacer(Modifier.height(8.dp))
-        SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-            SegmentedButton(
-                selected = type == MoneyType.Expense,
-                onClick = { onTypeChange(MoneyType.Expense) },
-                shape = SegmentedButtonDefaults.itemShape(0, 2),
-            ) { Text("Expense") }
-            SegmentedButton(
-                selected = type == MoneyType.Income,
-                onClick = { onTypeChange(MoneyType.Income) },
-                shape = SegmentedButtonDefaults.itemShape(1, 2),
-            ) { Text("Income") }
-        }
+        MoneyTypeToggle(selected = type, onSelect = onTypeChange)
 
-        Spacer(Modifier.weight(0.6f))
+        Spacer(Modifier.weight(0.7f))
         Row(
             Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.Center,
@@ -121,83 +110,65 @@ fun AddScreen(
         ) {
             Text(
                 currency.symbol,
-                style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(end = 6.dp, bottom = 8.dp),
+                style = MaterialTheme.typography.headlineSmall,
+                color = scheme.onSurfaceVariant,
+                modifier = Modifier.padding(end = 8.dp, bottom = 10.dp),
             )
             Text(
                 displayAmount(amount),
                 style = MaterialTheme.typography.displayLarge,
-                fontWeight = FontWeight.Light,
+                color = if (amountMuted) scheme.outline else scheme.onSurface,
             )
         }
 
-        Spacer(Modifier.height(24.dp))
-        OutlinedTextField(
+        Spacer(Modifier.weight(0.35f))
+        SoftTextField(
             value = note,
             onValueChange = { note = it },
+            placeholder = "Add note",
+            leadingIcon = Icons.Outlined.EditNote,
             modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text("Add note") },
-            leadingIcon = { Icon(Icons.Outlined.EditNote, contentDescription = null) },
-            singleLine = true,
-            shape = RoundedCornerShape(28.dp),
         )
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(14.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
-            Surface(
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.surfaceContainerHighest,
-                modifier = Modifier
-                    .weight(1f)
-                    .clickable { onShowDatePicker(true) },
+            SelectorPill(
+                onClick = { onShowDatePicker(true) },
+                modifier = Modifier.weight(1f),
             ) {
-                Row(
-                    Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(
-                        Icons.Outlined.CalendarMonth,
-                        contentDescription = "Date",
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(18.dp),
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Text(formatShortDate(date), style = MaterialTheme.typography.bodyMedium)
-                }
+                Icon(
+                    Icons.Outlined.CalendarMonth,
+                    contentDescription = "Date",
+                    tint = scheme.primary,
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(formatShortDate(date), style = MaterialTheme.typography.bodyMedium)
             }
-            Surface(
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.surfaceContainerHighest,
-                modifier = Modifier
-                    .weight(1.2f)
-                    .clickable(onClick = onPickCategory),
+            SelectorPill(
+                onClick = onPickCategory,
+                modifier = Modifier.weight(1.15f),
             ) {
-                Row(
-                    Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    if (selectedCategory != null) {
-                        EmojiTile(selectedCategory.emoji, selectedCategory.colorHex, size = 28.dp, corner = 8.dp)
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            selectedCategory.name,
-                            style = MaterialTheme.typography.bodyMedium,
-                            maxLines = 1,
-                            modifier = Modifier.weight(1f),
-                        )
-                    } else {
-                        Text("Category", modifier = Modifier.weight(1f))
-                    }
-                    Icon(Icons.Outlined.ArrowDropDown, contentDescription = null, modifier = Modifier.size(20.dp))
+                if (selectedCategory != null) {
+                    EmojiTile(selectedCategory.emoji, selectedCategory.colorHex, size = 28.dp, corner = 8.dp)
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        selectedCategory.name,
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 1,
+                        modifier = Modifier.weight(1f),
+                    )
+                } else {
+                    Text("Category", modifier = Modifier.weight(1f))
                 }
+                Icon(Icons.Outlined.ArrowDropDown, contentDescription = null, modifier = Modifier.size(20.dp), tint = scheme.onSurfaceVariant)
             }
         }
 
         Spacer(Modifier.height(12.dp))
-        Keypad(onPress = { press(it) })
+        HorizontalDivider(color = scheme.outlineVariant.copy(alpha = 0.4f), thickness = 0.5.dp)
+        Keypad(onPress = { press(it) }, modifier = Modifier.weight(1.15f))
 
-        Spacer(Modifier.height(12.dp))
         Button(
             onClick = {
                 val occurred = date.atTime(LocalTime.now()).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
@@ -220,7 +191,7 @@ fun AddScreen(
         ) {
             Icon(Icons.Outlined.Check, contentDescription = null, modifier = Modifier.size(18.dp))
             Spacer(Modifier.width(8.dp))
-            Text(if (type == MoneyType.Expense) "Save expense" else "Save income")
+            Text(if (type == MoneyType.Expense) "Save expense" else "Save income", fontWeight = FontWeight.Medium)
         }
         Spacer(Modifier.height(12.dp))
     }
@@ -258,28 +229,28 @@ fun AddScreen(
 }
 
 @Composable
-private fun Keypad(onPress: (String) -> Unit) {
+private fun Keypad(onPress: (String) -> Unit, modifier: Modifier = Modifier) {
     val keys = listOf(
         listOf("1", "2", "3"),
         listOf("4", "5", "6"),
         listOf("7", "8", "9"),
         listOf(".", "0", "back"),
     )
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.SpaceEvenly) {
         keys.forEach { row ->
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                 row.forEach { key ->
                     Box(
                         Modifier
                             .weight(1f)
-                            .height(52.dp)
+                            .height(56.dp)
                             .clickable { onPress(key) },
                         contentAlignment = Alignment.Center,
                     ) {
                         if (key == "back") {
                             Icon(Icons.AutoMirrored.Outlined.Backspace, contentDescription = "Delete", modifier = Modifier.size(22.dp))
                         } else {
-                            Text(key, fontSize = 22.sp, fontWeight = FontWeight.Medium, textAlign = TextAlign.Center)
+                            Text(key, fontSize = 24.sp, fontWeight = FontWeight.Medium, textAlign = TextAlign.Center)
                         }
                     }
                 }

@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
@@ -114,8 +115,9 @@ fun BudgetEditorSheet(
                         onSave(name.trim(), categoryId, minor)
                     }
                 },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().height(48.dp),
                 enabled = name.isNotBlank() && (amountText.toDoubleOrNull() ?: 0.0) > 0,
+                shape = CircleShape,
             ) {
                 Text("Save")
             }

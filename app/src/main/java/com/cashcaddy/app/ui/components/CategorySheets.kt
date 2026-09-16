@@ -26,22 +26,17 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.RemoveCircleOutline
 import androidx.compose.material.icons.outlined.Sell
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -51,6 +46,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -90,11 +86,7 @@ fun CategoryPickerSheet(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text("Category", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-                TextButton(onClick = onEdit) {
-                    Icon(Icons.Outlined.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text("Edit")
-                }
+                EditPillButton(onClick = onEdit)
             }
             visible.forEach { category ->
                 val selected = category.id == selectedId
@@ -214,21 +206,19 @@ fun CategoryEditSheet(
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                SingleChoiceSegmentedButtonRow(Modifier.weight(1f)) {
-                    SegmentedButton(
-                        selected = type == MoneyType.Expense,
-                        onClick = { onTypeChange(MoneyType.Expense) },
-                        shape = SegmentedButtonDefaults.itemShape(0, 2),
-                    ) { Text("Expense") }
-                    SegmentedButton(
-                        selected = type == MoneyType.Income,
-                        onClick = { onTypeChange(MoneyType.Income) },
-                        shape = SegmentedButtonDefaults.itemShape(1, 2),
-                    ) { Text("Income") }
-                }
-                Button(onClick = onNew, shape = CircleShape) {
+                MoneyTypeToggle(
+                    selected = type,
+                    onSelect = onTypeChange,
+                    modifier = Modifier.weight(1f),
+                )
+                Button(
+                    onClick = onNew,
+                    shape = CircleShape,
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                    colors = ButtonDefaults.buttonColors(),
+                ) {
                     Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(4.dp))
                     Text("New")
@@ -277,27 +267,14 @@ fun NewCategoryDialog(
             Column(Modifier.padding(20.dp)) {
                 Text("New category", style = MaterialTheme.typography.titleLarge)
                 Spacer(Modifier.height(16.dp))
-                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                    SegmentedButton(
-                        selected = type == MoneyType.Expense,
-                        onClick = { type = MoneyType.Expense },
-                        shape = SegmentedButtonDefaults.itemShape(0, 2),
-                    ) { Text("Expense") }
-                    SegmentedButton(
-                        selected = type == MoneyType.Income,
-                        onClick = { type = MoneyType.Income },
-                        shape = SegmentedButtonDefaults.itemShape(1, 2),
-                    ) { Text("Income") }
-                }
-                Spacer(Modifier.height(12.dp))
-                OutlinedTextField(
+                MoneyTypeToggle(selected = type, onSelect = { type = it })
+                Spacer(Modifier.height(14.dp))
+                SoftTextField(
                     value = name,
                     onValueChange = { name = it },
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("Category name") },
-                    leadingIcon = { Icon(Icons.Outlined.Sell, contentDescription = null) },
-                    singleLine = true,
-                    shape = RoundedCornerShape(28.dp),
+                    placeholder = "Category name",
+                    leadingIcon = Icons.Outlined.Sell,
                 )
                 Spacer(Modifier.height(16.dp))
                 Text(
@@ -316,9 +293,10 @@ fun NewCategoryDialog(
                             modifier = Modifier
                                 .size(40.dp)
                                 .clip(RoundedCornerShape(10.dp))
-                                .background(
-                                    if (selected) MaterialTheme.colorScheme.primaryContainer
-                                    else MaterialTheme.colorScheme.surfaceContainerHighest,
+                                .background(Color(0xFF16191D))
+                                .then(
+                                    if (selected) Modifier.border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(10.dp))
+                                    else Modifier,
                                 )
                                 .clickable { emoji = item },
                             contentAlignment = Alignment.Center,
@@ -356,7 +334,7 @@ fun NewCategoryDialog(
                         },
                         enabled = name.isNotBlank(),
                         modifier = Modifier
-                            .size(48.dp)
+                            .size(52.dp)
                             .clip(CircleShape)
                             .background(MaterialTheme.colorScheme.primary),
                     ) {

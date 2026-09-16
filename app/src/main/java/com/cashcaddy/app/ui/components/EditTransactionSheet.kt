@@ -8,16 +8,19 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -59,11 +62,18 @@ fun EditTransactionSheet(
     var categoryId by remember { mutableStateOf(item.transaction.categoryId) }
     var showCategoryPicker by remember { mutableStateOf(false) }
     val selected = categories.firstOrNull { it.id == categoryId } ?: item.category
+    val scheme = MaterialTheme.colorScheme
+    val fieldColors = OutlinedTextFieldDefaults.colors(
+        focusedContainerColor = scheme.surfaceContainerHighest.copy(alpha = 0.4f),
+        unfocusedContainerColor = scheme.surfaceContainerHighest.copy(alpha = 0.4f),
+        focusedBorderColor = scheme.outlineVariant,
+        unfocusedBorderColor = scheme.outlineVariant.copy(alpha = 0.6f),
+    )
 
     CashCaddySheet(onDismiss, state) {
         Column(Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
             Text("Edit transaction", style = MaterialTheme.typography.titleLarge)
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(20.dp))
             OutlinedTextField(
                 value = amountText,
                 onValueChange = { amountText = it.filter { ch -> ch.isDigit() || ch == '.' } },
@@ -72,7 +82,8 @@ fun EditTransactionSheet(
                 prefix = { Text(currency.symbol + " ") },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                shape = RoundedCornerShape(16.dp),
+                shape = CircleShape,
+                colors = fieldColors,
             )
             Spacer(Modifier.height(12.dp))
             OutlinedTextField(
@@ -81,33 +92,28 @@ fun EditTransactionSheet(
                 modifier = Modifier.fillMaxWidth(),
                 label = { Text("Title") },
                 singleLine = true,
-                shape = RoundedCornerShape(16.dp),
+                shape = CircleShape,
+                colors = fieldColors,
             )
-            Spacer(Modifier.height(12.dp))
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { showCategoryPicker = true }
-                    .padding(vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                EmojiTile(selected.emoji, selected.colorHex)
+            Spacer(Modifier.height(16.dp))
+            SelectorPill(onClick = { showCategoryPicker = true }, modifier = Modifier.fillMaxWidth()) {
+                EmojiTile(selected.emoji, selected.colorHex, size = 40.dp)
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
-                    Text("Category", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Category", style = MaterialTheme.typography.labelSmall, color = scheme.onSurfaceVariant)
                     Text(selected.name, style = MaterialTheme.typography.bodyLarge)
                 }
             }
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(24.dp))
             Row(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 TextButton(onClick = onDelete) {
-                    Icon(Icons.Outlined.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                    Icon(Icons.Outlined.Delete, contentDescription = null, tint = scheme.error, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(6.dp))
-                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                    Text("Delete", color = scheme.error)
                 }
                 Button(
                     onClick = {
@@ -115,6 +121,8 @@ fun EditTransactionSheet(
                         if (parsed != null && parsed > 0) onSave(parsed, title.trim(), categoryId)
                     },
                     enabled = parseMajorToMinor(amountText)?.let { it > 0 } == true && title.isNotBlank(),
+                    shape = CircleShape,
+                    colors = ButtonDefaults.buttonColors(),
                 ) {
                     Text("Save")
                 }

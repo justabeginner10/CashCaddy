@@ -3,7 +3,6 @@ package com.cashcaddy.app.ui.home
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,35 +18,33 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.outlined.ArrowDropDown
-import androidx.compose.material.icons.outlined.FilterList
-import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.automirrored.outlined.TrendingDown
 import androidx.compose.material.icons.automirrored.outlined.TrendingUp
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.outlined.FilterList
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.cashcaddy.app.data.local.entity.CategoryEntity
 import com.cashcaddy.app.data.local.entity.TransactionWithCategory
 import com.cashcaddy.app.data.model.AppCurrency
 import com.cashcaddy.app.data.model.MoneyType
 import com.cashcaddy.app.data.model.Period
 import com.cashcaddy.app.ui.components.EmojiTile
+import com.cashcaddy.app.ui.components.PeriodFilterChip
+import com.cashcaddy.app.ui.components.SoftTextField
 import com.cashcaddy.app.ui.theme.ComparisonGreen
 import com.cashcaddy.app.ui.theme.ComparisonRed
 import com.cashcaddy.app.util.formatDayHeader
@@ -103,6 +100,8 @@ fun HomeScreen(
         .groupBy { it.transaction.occurredAt.toLocalDate() }
         .toSortedMap(compareByDescending { it })
 
+    val scheme = MaterialTheme.colorScheme
+
     Column(
         Modifier
             .fillMaxSize()
@@ -111,13 +110,15 @@ fun HomeScreen(
         Row(
             Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 4.dp),
+                .padding(horizontal = 8.dp, vertical = 2.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = { onSearchOpenChange(!searchOpen) }) {
                 Icon(
                     if (searchOpen) Icons.Filled.Close else Icons.Outlined.Search,
                     contentDescription = "Search",
+                    tint = scheme.onSurface,
+                    modifier = Modifier.size(24.dp),
                 )
             }
             Spacer(Modifier.weight(1f))
@@ -125,22 +126,21 @@ fun HomeScreen(
                 Icon(
                     Icons.Outlined.FilterList,
                     contentDescription = "Filter",
-                    tint = if (filterCategoryId != null) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.onSurface,
+                    tint = if (filterCategoryId != null) scheme.primary else scheme.onSurface,
+                    modifier = Modifier.size(24.dp),
                 )
             }
         }
 
         AnimatedVisibility(searchOpen) {
-            OutlinedTextField(
+            SoftTextField(
                 value = searchQuery,
                 onValueChange = onSearchQueryChange,
+                placeholder = "Search logs",
+                leadingIcon = Icons.Outlined.Search,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp, vertical = 4.dp),
-                placeholder = { Text("Search logs") },
-                singleLine = true,
-                shape = RoundedCornerShape(28.dp),
             )
         }
 
@@ -156,14 +156,16 @@ fun HomeScreen(
                     selected = filterCategoryId == null,
                     onClick = { onFilterCategoryId(null) },
                     label = { Text("All") },
+                    shape = CircleShape,
                 )
-                categories.filter { it.isActive && it.moneyType == MoneyType.Expense }.take(5).forEach { cat ->
+                categories.filter { it.isActive && it.moneyType == MoneyType.Expense }.forEach { cat ->
                     FilterChip(
                         selected = filterCategoryId == cat.id,
                         onClick = {
                             onFilterCategoryId(if (filterCategoryId == cat.id) null else cat.id)
                         },
                         label = { Text(cat.emoji + " " + cat.name) },
+                        shape = CircleShape,
                     )
                 }
             }
@@ -172,54 +174,42 @@ fun HomeScreen(
         Column(
             Modifier
                 .fillMaxWidth()
-                .padding(top = 8.dp, bottom = 20.dp),
+                .padding(top = 12.dp, bottom = 28.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     "Net spent",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = scheme.onSurfaceVariant,
                 )
                 Spacer(Modifier.width(8.dp))
-                AssistChip(
-                    onClick = onPeriodClick,
-                    label = { Text(period.chipLabel) },
-                    trailingIcon = {
-                        Icon(Icons.Outlined.ArrowDropDown, contentDescription = null, modifier = Modifier.size(18.dp))
-                    },
-                    colors = AssistChipDefaults.assistChipColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        labelColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    ),
-                    shape = CircleShape,
-                )
+                PeriodFilterChip(period = period, onClick = onPeriodClick)
             }
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(6.dp))
             Text(
                 formatMoney(spent, currency),
                 style = MaterialTheme.typography.displayLarge,
-                fontWeight = FontWeight.Normal,
             )
             if (previous != null && prevSpent > 0) {
                 val delta = ((prevSpent - spent).toDouble() / prevSpent.toDouble() * 100.0).roundToInt()
                 val less = delta >= 0
-                val color = if (less) ComparisonGreen else ComparisonRed
+                val iconColor = if (less) ComparisonGreen else ComparisonRed
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(top = 6.dp),
+                    modifier = Modifier.padding(top = 8.dp),
                 ) {
                     Icon(
                         if (less) Icons.AutoMirrored.Outlined.TrendingDown else Icons.AutoMirrored.Outlined.TrendingUp,
                         contentDescription = null,
-                        tint = color,
+                        tint = iconColor,
                         modifier = Modifier.size(16.dp),
                     )
-                    Spacer(Modifier.width(4.dp))
+                    Spacer(Modifier.width(6.dp))
                     Text(
                         "${kotlin.math.abs(delta)}% ${if (less) "less" else "more"} than ${period.comparisonLabel()}",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = color,
+                        style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 0.1.sp),
+                        color = scheme.onSurfaceVariant,
                     )
                 }
             }
@@ -229,12 +219,12 @@ fun HomeScreen(
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
                     if (searchQuery.isNotBlank()) "No matching logs" else "No spend in this period",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = scheme.onSurfaceVariant,
                 )
             }
         } else {
             LazyColumn(
-                contentPadding = PaddingValues(bottom = 24.dp),
+                contentPadding = PaddingValues(bottom = 16.dp),
                 modifier = Modifier.fillMaxSize(),
             ) {
                 groups.forEach { (date, items) ->
@@ -244,19 +234,19 @@ fun HomeScreen(
                         Row(
                             Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 20.dp, vertical = 8.dp),
+                                .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 8.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Text(
                                 formatDayHeader(date, today),
                                 style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                color = scheme.onSurfaceVariant,
                                 modifier = Modifier.weight(1f),
                             )
                             Text(
                                 formatMoney(dayTotal, currency),
                                 style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                color = scheme.onSurfaceVariant,
                             )
                         }
                     }
@@ -275,11 +265,12 @@ private fun TransactionRow(
     currency: AppCurrency,
     onClick: () -> Unit,
 ) {
+    val scheme = MaterialTheme.colorScheme
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = 8.dp),
+            .padding(horizontal = 20.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         EmojiTile(item.category.emoji, item.category.colorHex)
@@ -289,7 +280,7 @@ private fun TransactionRow(
             Text(
                 "${item.category.name} · ${formatTime(item.transaction.occurredAt)}",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = scheme.onSurfaceVariant,
             )
         }
         Text(

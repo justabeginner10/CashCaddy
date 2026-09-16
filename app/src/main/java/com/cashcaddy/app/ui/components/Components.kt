@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.material3.Text
+import com.cashcaddy.app.ui.theme.isDark
 import com.cashcaddy.app.util.parseHexColor
 
 val SheetShape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
@@ -25,10 +26,10 @@ fun EmojiTile(
     emoji: String,
     colorHex: String,
     modifier: Modifier = Modifier,
-    size: Dp = 44.dp,
-    corner: Dp = 12.dp,
+    size: Dp = 48.dp,
+    corner: Dp = 14.dp,
 ) {
-    val tint = parseHexColor(colorHex).copy(alpha = 0.22f)
+    val tint = parseHexColor(colorHex).copy(alpha = if (MaterialTheme.colorScheme.isDark()) 0.28f else 0.16f)
     Box(
         modifier = modifier
             .size(size)

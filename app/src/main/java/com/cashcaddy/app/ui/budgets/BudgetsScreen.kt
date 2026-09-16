@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -32,7 +33,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.cashcaddy.app.data.local.entity.BudgetWithCategory
@@ -77,9 +77,9 @@ fun BudgetsScreen(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text("Budgets", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.weight(1f))
-            Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surfaceContainerHighest) {
-                IconButton(onClick = onAdd) {
-                    Icon(Icons.Filled.Add, contentDescription = "Add budget")
+            Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surfaceContainerHighest, tonalElevation = 0.dp) {
+                IconButton(onClick = onAdd, modifier = Modifier.size(40.dp)) {
+                    Icon(Icons.Filled.Add, contentDescription = "Add budget", modifier = Modifier.size(22.dp))
                 }
             }
         }
@@ -91,7 +91,7 @@ fun BudgetsScreen(
         } else {
             LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
-                contentPadding = PaddingValues(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 24.dp),
+                contentPadding = PaddingValues(start = 16.dp, top = 4.dp, end = 16.dp, bottom = 24.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
@@ -137,32 +137,38 @@ private fun BudgetCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(22.dp),
         color = MaterialTheme.colorScheme.surfaceContainer,
+        tonalElevation = 0.dp,
     ) {
         Column(Modifier.padding(16.dp)) {
             Text(item.budget.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+            Spacer(Modifier.height(2.dp))
             Text(
                 "$daysLeft days left",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(18.dp))
             Text(
                 "$pct% spent",
                 style = MaterialTheme.typography.labelMedium,
                 color = pctColor,
+                fontWeight = FontWeight.Medium,
             )
-            Text(formatMoney(left, currency), style = MaterialTheme.typography.headlineSmall)
+            Spacer(Modifier.height(2.dp))
+            Text(formatMoney(left, currency), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Normal)
             Text(
                 "left this month",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(14.dp))
             val track = MaterialTheme.colorScheme.surfaceContainerHighest
-            Canvas(Modifier.fillMaxWidth().height(14.dp)) {
-                val h = 6.dp.toPx()
+            val thumbOuter = androidx.compose.ui.graphics.Color.White
+            val thumbInner = androidx.compose.ui.graphics.Color(0xFF1A1C1E)
+            Canvas(Modifier.fillMaxWidth().height(16.dp)) {
+                val h = 8.dp.toPx()
                 val y = (size.height - h) / 2f
                 drawRoundRect(
                     color = track,
@@ -171,26 +177,27 @@ private fun BudgetCard(
                     cornerRadius = CornerRadius(h / 2, h / 2),
                 )
                 val spentW = size.width * fraction.coerceAtMost(1f)
+                if (spentW > 0f) {
+                    drawRoundRect(
+                        color = color,
+                        topLeft = Offset(0f, y),
+                        size = Size(spentW.coerceAtLeast(h), h),
+                        cornerRadius = CornerRadius(h / 2, h / 2),
+                    )
+                }
+                val markerX = size.width * pace.coerceIn(0.03f, 0.97f)
+                val thumbW = 5.dp.toPx()
                 drawRoundRect(
-                    color = color,
-                    topLeft = Offset(0f, y),
-                    size = Size(spentW, h),
-                    cornerRadius = CornerRadius(h / 2, h / 2),
+                    color = thumbInner,
+                    topLeft = Offset(markerX - thumbW / 2f, 1.dp.toPx()),
+                    size = Size(thumbW, size.height - 2.dp.toPx()),
+                    cornerRadius = CornerRadius(thumbW / 2, thumbW / 2),
                 )
-                val markerX = size.width * pace.coerceIn(0.02f, 0.98f)
-                drawLine(
-                    color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.9f),
-                    start = Offset(markerX, 0f),
-                    end = Offset(markerX, size.height),
-                    strokeWidth = 3.dp.toPx(),
-                    cap = StrokeCap.Round,
-                )
-                drawLine(
-                    color = androidx.compose.ui.graphics.Color(0xFF1A1C1E),
-                    start = Offset(markerX, 1.dp.toPx()),
-                    end = Offset(markerX, size.height - 1.dp.toPx()),
-                    strokeWidth = 2.dp.toPx(),
-                    cap = StrokeCap.Round,
+                drawRoundRect(
+                    color = thumbOuter,
+                    topLeft = Offset(markerX - thumbW / 2f + 0.8.dp.toPx(), 2.dp.toPx()),
+                    size = Size(thumbW - 1.6.dp.toPx(), size.height - 4.dp.toPx()),
+                    cornerRadius = CornerRadius(2.dp.toPx(), 2.dp.toPx()),
                 )
             }
         }

@@ -17,7 +17,6 @@ import androidx.compose.material.icons.outlined.LightMode
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -159,20 +158,27 @@ fun CurrencySheet(
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
             )
             AppCurrency.entries.forEach { currency ->
+                val isSelected = currency == selected
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { onSelect(currency); onDismiss() }
-                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    RadioButton(
-                        selected = currency == selected,
-                        onClick = { onSelect(currency); onDismiss() },
+                    Text(
+                        "${currency.symbol}  ${currency.displayName}",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = if (isSelected) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.weight(1f),
                     )
-                    Column {
-                        Text("${currency.symbol}  ${currency.code}", style = MaterialTheme.typography.bodyLarge)
-                        Text(currency.displayName, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    if (isSelected) {
+                        Icon(
+                            Icons.Filled.Check,
+                            contentDescription = "Selected",
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
                     }
                 }
             }

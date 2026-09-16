@@ -22,13 +22,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowDownward
 import androidx.compose.material.icons.outlined.ArrowUpward
-import androidx.compose.material.icons.outlined.UnfoldMore
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import com.cashcaddy.app.ui.components.OutlinedPeriodChip
+import com.cashcaddy.app.ui.theme.DarkChartMuted
+import com.cashcaddy.app.ui.theme.LightChartMuted
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -37,7 +37,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -100,21 +99,11 @@ fun InsightsScreen(
             .padding(bottom = 24.dp),
     ) {
         Row(
-            Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 16.dp),
+            Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 20.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text("Insights", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.weight(1f))
-            AssistChip(
-                onClick = onPeriodClick,
-                label = { Text(period.chipLabel) },
-                trailingIcon = {
-                    Icon(Icons.Outlined.UnfoldMore, contentDescription = null, modifier = Modifier.size(16.dp))
-                },
-                colors = AssistChipDefaults.assistChipColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                ),
-                shape = CircleShape,
-            )
+            OutlinedPeriodChip(period = period, onClick = onPeriodClick)
         }
 
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
@@ -122,12 +111,12 @@ fun InsightsScreen(
                 Text(
                     period.periodHeadline(today),
                     style = MaterialTheme.typography.labelSmall.copy(
-                        letterSpacing = 2.sp,
+                        letterSpacing = 2.2.sp,
                         fontWeight = FontWeight.Medium,
                     ),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                Spacer(Modifier.height(4.dp))
+                Spacer(Modifier.height(6.dp))
                 Text(
                     formatMoney(expenseTotal, currency, signedExpenseNegative = true),
                     style = MaterialTheme.typography.displayMedium,
@@ -136,12 +125,14 @@ fun InsightsScreen(
             Column(horizontalAlignment = Alignment.End) {
                 Text(
                     period.averageLabel(),
-                    style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.4.sp),
+                    style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.6.sp),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                Spacer(Modifier.height(6.dp))
                 Text(
                     formatMoney(average, currency),
                     style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Normal,
                 )
             }
         }
@@ -173,7 +164,7 @@ fun InsightsScreen(
             Column(Modifier.padding(16.dp)) {
                 Text("Spend over time", style = MaterialTheme.typography.titleSmall)
                 Spacer(Modifier.height(12.dp))
-                SpendChart(bars = bars, averageMinor = average)
+                SpendChart(bars = bars, averageMinor = average, darkTheme = darkTheme)
             }
         }
 
@@ -192,14 +183,15 @@ fun InsightsScreen(
                     Row(
                         Modifier
                             .fillMaxWidth()
-                            .height(10.dp)
-                            .clip(CircleShape),
+                            .height(10.dp),
+                        horizontalArrangement = Arrangement.spacedBy(5.dp),
                     ) {
                         breakdown.forEach { (cat, amount) ->
                             Box(
                                 Modifier
                                     .weight(amount.toFloat().coerceAtLeast(1f))
                                     .fillMaxHeight()
+                                    .clip(CircleShape)
                                     .background(parseHexColor(cat.colorHex)),
                             )
                         }
@@ -250,24 +242,25 @@ private fun SummaryCard(
         Column(Modifier.padding(16.dp)) {
             Box(
                 Modifier
-                    .size(36.dp)
+                    .size(40.dp)
                     .clip(CircleShape)
                     .background(iconBg),
                 contentAlignment = Alignment.Center,
             ) { icon() }
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(18.dp))
             Text(title, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.height(2.dp))
             Text(amount, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
         }
     }
 }
 
 @Composable
-private fun SpendChart(bars: List<Pair<String, Long>>, averageMinor: Long) {
+private fun SpendChart(bars: List<Pair<String, Long>>, averageMinor: Long, darkTheme: Boolean) {
     val maxVal = max(bars.maxOfOrNull { it.second } ?: 0L, averageMinor)
     val niceMax = niceCeiling(maxVal)
     val primary = MaterialTheme.colorScheme.primary
-    val muted = MaterialTheme.colorScheme.surfaceContainerHighest
+    val muted = if (darkTheme) DarkChartMuted else LightChartMuted
     val grid = MaterialTheme.colorScheme.outlineVariant
     val onVar = MaterialTheme.colorScheme.onSurfaceVariant
     val peak = bars.maxOfOrNull { it.second } ?: 0L
@@ -285,40 +278,45 @@ private fun SpendChart(bars: List<Pair<String, Long>>, averageMinor: Long) {
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 Canvas(Modifier.fillMaxSize()) {
                     val n = bars.size.coerceAtLeast(1)
-                    val gap = 10.dp.toPx()
+                    val gap = 8.dp.toPx()
                     val barW = ((size.width - gap * (n - 1)) / n).coerceAtLeast(8.dp.toPx())
                     val avgY = size.height * (1f - (averageMinor.toFloat() / niceMax.toFloat()).coerceIn(0f, 1f))
-                    val dash = PathEffect.dashPathEffect(floatArrayOf(12f, 10f), 0f)
-                    drawLine(
-                        color = grid,
-                        start = Offset(0f, avgY),
-                        end = Offset(size.width, avgY),
-                        strokeWidth = 2.dp.toPx(),
-                        pathEffect = dash,
-                        cap = StrokeCap.Round,
-                    )
                     bars.forEachIndexed { index, (_, value) ->
                         val h = if (niceMax == 0L) 0f else size.height * (value.toFloat() / niceMax.toFloat())
                         val x = index * (barW + gap)
                         val color = if (value == peak && value > 0) primary else muted
+                        val barH = h.coerceAtLeast(if (value == 0L) 3.dp.toPx() else 0f)
                         drawRoundRect(
                             color = color,
-                            topLeft = Offset(x, size.height - h),
-                            size = Size(barW, h.coerceAtLeast(0f)),
-                            cornerRadius = CornerRadius(8.dp.toPx(), 8.dp.toPx()),
+                            topLeft = Offset(x, size.height - barH),
+                            size = Size(barW, barH),
+                            cornerRadius = CornerRadius(10.dp.toPx(), 10.dp.toPx()),
                         )
                     }
+                    drawLine(
+                        color = grid,
+                        start = Offset(0f, avgY),
+                        end = Offset(size.width, avgY),
+                        strokeWidth = 1.dp.toPx(),
+                        cap = StrokeCap.Round,
+                    )
                 }
                 if (averageMinor > 0 && niceMax > 0) {
                     val frac = 1f - (averageMinor.toFloat() / niceMax.toFloat()).coerceIn(0f, 1f)
-                    Text(
-                        formatCompact(averageMinor),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = onVar,
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.surfaceContainerHighest,
                         modifier = Modifier
                             .align(Alignment.TopEnd)
-                            .padding(top = (160.dp * frac).coerceAtLeast(0.dp)),
-                    )
+                            .padding(top = (148.dp * frac).coerceAtLeast(0.dp)),
+                    ) {
+                        Text(
+                            formatCompact(averageMinor),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = onVar,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                        )
+                    }
                 }
             }
             Row(Modifier.fillMaxWidth().padding(top = 6.dp), horizontalArrangement = Arrangement.SpaceBetween) {
