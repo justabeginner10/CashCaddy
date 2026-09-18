@@ -368,11 +368,17 @@ private fun averageForPeriod(
     return when (period) {
         Period.Today -> expenseTotal / 24
         Period.ThisWeek -> expenseTotal / 7
-        Period.ThisMonth -> expenseTotal / 4
+        Period.ThisMonth -> {
+            val weeksElapsed = ((today.dayOfMonth + 6) / 7).coerceAtLeast(1)
+            expenseTotal / weeksElapsed
+        }
         Period.ThisYear -> expenseTotal / today.monthValue.coerceAtLeast(1)
         Period.AllTime -> {
-            val start = range?.start ?: today.minusMonths(6)
-            val months = ChronoUnit.MONTHS.between(YearMonth.from(start), YearMonth.from(today)).toInt().coerceAtLeast(1)
+            val start = range?.start ?: today.minusMonths(11)
+            val months = ChronoUnit.MONTHS.between(YearMonth.from(start), YearMonth.from(today))
+                .toInt()
+                .plus(1)
+                .coerceAtLeast(1)
             expenseTotal / months
         }
     }
@@ -405,23 +411,30 @@ private fun spendBars(
                 d.dayOfWeek.name.take(2) to sumOn { it == d }
             }
         }
-        Period.ThisMonth, Period.AllTime -> {
+        Period.ThisMonth -> {
             val ym = YearMonth.from(today)
             val first = ym.atDay(1)
             val startWeek = first.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-            val buckets = (0 until 5).map { w ->
+            (0 until 5).map { w ->
                 val ws = startWeek.plusWeeks(w.toLong())
                 val we = ws.plusDays(6)
                 "W${w + 1}" to sumOn { date -> date in ws..we && date.month == today.month && date.year == today.year }
             }
-            buckets
         }
         Period.ThisYear -> {
-            (1..6).map { m ->
-                val month = if (today.monthValue <= 6) m else m + 6
-                val label = YearMonth.of(today.year, month.coerceIn(1, 12)).month.name.take(1)
-                label to sumOn { it.year == today.year && it.monthValue == month }
+            (1..12).map { month ->
+                monthLabel(YearMonth.of(today.year, month)) to
+                    sumOn { it.year == today.year && it.monthValue == month }
+            }
+        }
+        Period.AllTime -> {
+            (11 downTo 0).map { monthsAgo ->
+                val ym = YearMonth.from(today).minusMonths(monthsAgo.toLong())
+                monthLabel(ym) to sumOn { YearMonth.from(it) == ym }
             }
         }
     }
 }
+
+private fun monthLabel(ym: YearMonth): String =
+    ym.month.name.take(3).lowercase().replaceFirstChar { it.uppercase() }

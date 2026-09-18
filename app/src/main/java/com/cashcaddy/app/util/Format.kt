@@ -14,12 +14,16 @@ import java.util.Locale
 import kotlin.math.abs
 
 fun parseHexColor(hex: String): Color {
-    val cleaned = hex.removePrefix("#")
-    val value = cleaned.toLong(16)
-    return when (cleaned.length) {
-        6 -> Color(0xFF000000L or value)
-        8 -> Color(value)
-        else -> Color(0xFF9AA0A6)
+    return try {
+        val cleaned = hex.trim().removePrefix("#")
+        val value = cleaned.toLong(16)
+        when (cleaned.length) {
+            6 -> Color(0xFF000000L or value)
+            8 -> Color(value)
+            else -> Color(0xFF9AA0A6)
+        }
+    } catch (_: Exception) {
+        Color(0xFF9AA0A6)
     }
 }
 

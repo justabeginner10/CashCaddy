@@ -23,7 +23,7 @@ Custom 5-item tab bar: Home, Insights, elevated centre **+**, Budgets, Settings.
 
 ## First launch
 
-The database starts empty of transactions and budgets. Starter categories are created so Add works immediately: Food & Drink, Transport, Shopping, Groceries, Bills, Health, plus Travel / Fuel / Rent suggestions, and Salary / Freelance for income. Currency defaults to **INR (₹)**.
+On first launch, starter categories are created so Add works immediately: Food & Drink, Transport, Shopping, Groceries, Bills, Health, plus Travel / Fuel / Rent suggestions, and Salary / Freelance for income. A small set of demo transactions and two sample budgets is also seeded (recent dates, INR amounts) so Home, Insights, and Budgets are not empty. Currency defaults to **INR (₹)**.
 
 ## Build
 

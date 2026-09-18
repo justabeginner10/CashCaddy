@@ -100,7 +100,6 @@ fun HomeScreen(
         .sumOf { it.transaction.amountMinor }
 
     val groups = filtered
-        .filter { it.transaction.moneyType == MoneyType.Expense || searchQuery.isNotBlank() }
         .groupBy { it.transaction.occurredAt.toLocalDate() }
         .toSortedMap(compareByDescending { it })
 

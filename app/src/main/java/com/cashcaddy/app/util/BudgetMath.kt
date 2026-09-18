@@ -61,8 +61,8 @@ fun budgetSnapshot(
     val percentSpent = when {
         limit <= 0L -> if (spent > 0L) 100 else 0
         spent <= 0L -> 0
-        spent >= limit -> 100
-        else -> ((spent * 100.0) / limit).roundToInt().coerceIn(1, 99)
+        spent < limit -> ((spent * 100.0) / limit).roundToInt().coerceIn(1, 99)
+        else -> ((spent * 100.0) / limit).roundToInt()
     }
     val fillFraction = when {
         limit <= 0L -> if (spent > 0L) 0f else 1f
